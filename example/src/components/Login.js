@@ -11,12 +11,22 @@ class Login extends Component {
     };
   }
 
+  async identityExist(identity) {
+    const {identityService} = this.props.services;
+    return await identityService.identityExist(identity);
+    // return identity === 'alex.universal-id.eth';
+  }
+
   async onNextClick() {
     const {emitter} = this.props.services;
-    const {identityService} = this.props.services;
-    emitter.emit('setView', 'CreatingID');
-    await identityService.createIdentity(this.state.identity);
-    emitter.emit('setView', 'Greeting');
+    if (await this.identityExist(this.state.identity)) {
+      emitter.emit('setView', 'MainScreen');
+    } else {
+      const {identityService} = this.props.services;
+      emitter.emit('setView', 'CreatingID');
+      await identityService.createIdentity(this.state.identity);
+      emitter.emit('setView', 'Greeting');
+    }
   }
 
   onChange(identity) {

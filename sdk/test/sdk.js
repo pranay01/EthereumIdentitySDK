@@ -4,6 +4,7 @@ import EthereumIdentitySDK from '../lib/sdk';
 import {RelayerUnderTest} from 'ethereum-identity-sdk-relayer';
 import {createMockProvider, getWallets, solidity} from 'ethereum-waffle';
 import {utils} from 'ethers';
+import Identity from '../abi/Identity';
 
 chai.use(solidity);
 
@@ -56,6 +57,29 @@ describe('SDK - Identity', async () => {
       expect(response.config.ensAddress).to.eq(expectedEnsAddress);
     });
 
+    describe('Identity Exists', async () => {
+      it('should return correct bytecode', async () => {
+        const address = await sdk.getAddress('alex.mylogin.eth');
+        expect(Identity.runtimeBytecode.slice(0, 14666)).to.eq((await provider.getCode(address)).slice(2, 14668));
+      });
+
+      it('shoul return false if no resolver address', async () => {
+        expect(await sdk.getAddress('no-such-login.mylogin.eth')).to.be.false;
+      });
+
+      it('should get correct address', async () => {
+        expect(await sdk.getAddress('alex.mylogin.eth')).to.eq(identityAddress);
+      });
+
+      it('should return identity address if identity exist', async () => {
+        expect(await sdk.identityExist('alex.mylogin.eth')).to.eq(identityAddress);
+      });
+
+      it('should return false if identity doesn`t exist', async () => {
+        expect(await sdk.identityExist('no-such-login.mylogin.eth')).to.be.false;
+      });
+    });
+   
     describe('Execute signed message', async () => {
       let expectedBalance;
       let nonce;

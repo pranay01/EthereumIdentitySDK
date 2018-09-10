@@ -1,6 +1,10 @@
 import ethers, {utils, Interface} from 'ethers';
 import {waitForContractDeploy, messageSignature} from './utils';
 import Identity from '../abi/Identity';
+import ENS from '../abi/ENS';
+import PublicResolver from '../abi/PublicResolver';
+
+const {namehash} = utils;
 
 const MANAGEMENT_KEY = 1;
 const ACTION_KEY = 2;
@@ -79,6 +83,30 @@ class EthereumIdentitySDK {
       }
     }
     throw 'Event ExecutionRequested not emitted';
+  }
+
+  async identityExist(identity) {
+    const identityAddress = await this.getAddress(identity);
+    if (identityAddress && (Identity.runtimeBytecode.slice(0, 14666) === (await this.getCode(identityAddress)).slice(2, 14668))) {
+      return identityAddress;
+    }
+    return false;
+  }
+
+  async getAddress(identity) {
+    const node = namehash(identity);
+    const {ensAddress} = (await this.getRelayerConfig()).config;
+    this.ensContract = new ethers.Contract(ensAddress, ENS.interface, this.provider);
+    const resolverAddress = await this.ensContract.resolver(node);
+    if (resolverAddress != 0) {
+      this.resolverContract = new ethers.Contract(resolverAddress, PublicResolver.interface, this.provider);
+      return await this.resolverContract.addr(node);
+    }
+    return false;
+  }
+
+  async getCode(address) {
+    return await this.provider.getCode(address);
   }
 }
 
